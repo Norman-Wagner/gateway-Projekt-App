@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppStore } from '../../src/store/appStore';
 import { useTranslation } from '../../src/hooks/useTranslation';
+import { colors } from '../../src/theme/colors';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 
@@ -38,9 +39,9 @@ export default function HomeScreen() {
   };
 
   const focusLevelColors: Record<string, string[]> = {
-    '10': ['#4A90D9', '#357ABD'],
-    '12': ['#7B68EE', '#6A5ACD'],
-    '15': ['#9932CC', '#8B008B'],
+    '10': colors.focus.level10.gradient,
+    '12': colors.focus.level12.gradient,
+    '15': colors.focus.level15.gradient,
   };
 
   const getFocusLevelTitle = (level: string) => {
@@ -61,14 +62,14 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={isLoading}
             onRefresh={handleRefresh}
-            tintColor="#7B68EE"
+            tintColor={colors.accent.glow}
           />
         }
       >
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerIcon}>
-            <Ionicons name="eye-outline" size={32} color="#7B68EE" />
+            <Ionicons name="eye-outline" size={32} color={colors.accent.glow} />
           </View>
           <Text style={styles.welcomeText}>{t.home.welcome}</Text>
           <Text style={styles.subtitle}>{t.home.subtitle}</Text>
@@ -77,17 +78,17 @@ export default function HomeScreen() {
         {/* Statistics Cards */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Ionicons name="pulse-outline" size={24} color="#4A90D9" />
+            <Ionicons name="pulse-outline" size={24} color={colors.focus.level10.primary} />
             <Text style={styles.statNumber}>{statistics?.total_sessions || 0}</Text>
             <Text style={styles.statLabel}>{t.home.totalSessions}</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="time-outline" size={24} color="#7B68EE" />
+            <Ionicons name="time-outline" size={24} color={colors.focus.level12.primary} />
             <Text style={styles.statNumber}>{statistics?.total_minutes || 0}</Text>
             <Text style={styles.statLabel}>{t.home.totalMinutes}</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="flame-outline" size={24} color="#FF6B6B" />
+            <Ionicons name="flame-outline" size={24} color={colors.status.warning} />
             <Text style={styles.statNumber}>{statistics?.streak_days || 0}</Text>
             <Text style={styles.statLabel}>{t.home.currentStreak}</Text>
           </View>
@@ -121,7 +122,7 @@ export default function HomeScreen() {
           <Text style={styles.sectionTitle}>{t.home.recentSessions}</Text>
           {sessions.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="moon-outline" size={48} color="#3a3a5a" />
+              <Ionicons name="moon-outline" size={48} color={colors.text.muted} />
               <Text style={styles.emptyText}>{t.home.noSessions}</Text>
             </View>
           ) : (
@@ -130,7 +131,7 @@ export default function HomeScreen() {
                 <View
                   style={[
                     styles.sessionIndicator,
-                    { backgroundColor: focusLevelColors[session.focus_level]?.[0] || '#7B68EE' },
+                    { backgroundColor: focusLevelColors[session.focus_level]?.[0] || colors.accent.primary },
                   ]}
                 />
                 <View style={styles.sessionInfo}>
@@ -160,7 +161,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a1a',
+    backgroundColor: colors.background.primary,
   },
   scrollView: {
     flex: 1,
@@ -177,7 +178,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(123, 104, 238, 0.15)',
+    backgroundColor: colors.overlay.light,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -185,12 +186,12 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#fff',
+    color: colors.text.primary,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 15,
-    color: '#8B8B9E',
+    color: colors.text.tertiary,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -199,22 +200,22 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#12122a',
+    backgroundColor: colors.background.card,
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#1a1a3a',
+    borderColor: colors.border.primary,
   },
   statNumber: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#fff',
+    color: colors.text.primary,
     marginTop: 8,
   },
   statLabel: {
     fontSize: 11,
-    color: '#6a6a8a',
+    color: colors.text.tertiary,
     marginTop: 4,
     textAlign: 'center',
   },
@@ -225,7 +226,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.text.primary,
     marginBottom: 16,
   },
   quickStartGrid: {
@@ -252,22 +253,24 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     paddingVertical: 48,
-    backgroundColor: '#12122a',
+    backgroundColor: colors.background.card,
     borderRadius: 16,
   },
   emptyText: {
     fontSize: 14,
-    color: '#6a6a8a',
+    color: colors.text.tertiary,
     marginTop: 12,
     textAlign: 'center',
   },
   sessionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#12122a',
+    backgroundColor: colors.background.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.border.primary,
   },
   sessionIndicator: {
     width: 4,
@@ -281,16 +284,16 @@ const styles = StyleSheet.create({
   sessionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.text.primary,
   },
   sessionDate: {
     fontSize: 12,
-    color: '#6a6a8a',
+    color: colors.text.tertiary,
     marginTop: 4,
   },
   sessionDuration: {
     fontSize: 14,
-    color: '#7B68EE',
+    color: colors.accent.glow,
     fontWeight: '500',
   },
 });

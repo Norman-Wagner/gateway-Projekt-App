@@ -15,78 +15,65 @@ import Animated, {
   withRepeat,
   withTiming,
   withDelay,
-  Easing,
 } from 'react-native-reanimated';
 import { useTranslation } from '../src/hooks/useTranslation';
+import { colors } from '../src/theme/colors';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { language } = useTranslation();
 
-  // Animated circles
-  const circle1Scale = useSharedValue(1);
-  const circle2Scale = useSharedValue(1);
-  const circle3Scale = useSharedValue(1);
-  const circle1Opacity = useSharedValue(0.3);
-  const circle2Opacity = useSharedValue(0.2);
-  const circle3Opacity = useSharedValue(0.1);
+  // Animated brain wave circles
+  const wave1 = useSharedValue(1);
+  const wave2 = useSharedValue(1);
+  const wave3 = useSharedValue(1);
+  const wave1Opacity = useSharedValue(0.4);
+  const wave2Opacity = useSharedValue(0.3);
+  const wave3Opacity = useSharedValue(0.2);
 
   useEffect(() => {
-    // Pulsing animations
-    circle1Scale.value = withRepeat(
-      withTiming(1.2, { duration: 3000, easing: Easing.inOut(Easing.ease) }),
+    wave1.value = withRepeat(
+      withTiming(1.15, { duration: 4000 }),
       -1,
       true
     );
-    circle2Scale.value = withDelay(
-      500,
+    wave2.value = withDelay(
+      800,
       withRepeat(
-        withTiming(1.3, { duration: 3500, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1.2, { duration: 4500 }),
         -1,
         true
       )
     );
-    circle3Scale.value = withDelay(
-      1000,
+    wave3.value = withDelay(
+      1600,
       withRepeat(
-        withTiming(1.4, { duration: 4000, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1.25, { duration: 5000 }),
         -1,
         true
       )
     );
 
-    circle1Opacity.value = withRepeat(
-      withTiming(0.5, { duration: 3000 }),
-      -1,
-      true
-    );
-    circle2Opacity.value = withRepeat(
-      withTiming(0.4, { duration: 3500 }),
-      -1,
-      true
-    );
-    circle3Opacity.value = withRepeat(
-      withTiming(0.3, { duration: 4000 }),
-      -1,
-      true
-    );
+    wave1Opacity.value = withRepeat(withTiming(0.6, { duration: 4000 }), -1, true);
+    wave2Opacity.value = withRepeat(withTiming(0.5, { duration: 4500 }), -1, true);
+    wave3Opacity.value = withRepeat(withTiming(0.4, { duration: 5000 }), -1, true);
   }, []);
 
-  const animatedCircle1 = useAnimatedStyle(() => ({
-    transform: [{ scale: circle1Scale.value }],
-    opacity: circle1Opacity.value,
+  const animatedWave1 = useAnimatedStyle(() => ({
+    transform: [{ scale: wave1.value }],
+    opacity: wave1Opacity.value,
   }));
 
-  const animatedCircle2 = useAnimatedStyle(() => ({
-    transform: [{ scale: circle2Scale.value }],
-    opacity: circle2Opacity.value,
+  const animatedWave2 = useAnimatedStyle(() => ({
+    transform: [{ scale: wave2.value }],
+    opacity: wave2Opacity.value,
   }));
 
-  const animatedCircle3 = useAnimatedStyle(() => ({
-    transform: [{ scale: circle3Scale.value }],
-    opacity: circle3Opacity.value,
+  const animatedWave3 = useAnimatedStyle(() => ({
+    transform: [{ scale: wave3.value }],
+    opacity: wave3Opacity.value,
   }));
 
   const handleStart = () => {
@@ -96,26 +83,39 @@ export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#0a0a1a', '#1a1a3a', '#0a0a1a']}
+        colors={[colors.background.primary, '#0A1628', colors.background.primary]}
         style={styles.gradient}
       >
-        {/* Animated background circles */}
-        <Animated.View style={[styles.circle, styles.circle3, animatedCircle3]} />
-        <Animated.View style={[styles.circle, styles.circle2, animatedCircle2]} />
-        <Animated.View style={[styles.circle, styles.circle1, animatedCircle1]} />
+        {/* Brain wave circles */}
+        <Animated.View style={[styles.wave, styles.wave3, animatedWave3]} />
+        <Animated.View style={[styles.wave, styles.wave2, animatedWave2]} />
+        <Animated.View style={[styles.wave, styles.wave1, animatedWave1]} />
 
-        {/* Content */}
         <View style={styles.content}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="eye-outline" size={80} color="#7B68EE" />
+          {/* Logo */}
+          <View style={styles.logoContainer}>
+            <View style={styles.logoInner}>
+              <Ionicons name="eye" size={50} color={colors.accent.glow} />
+            </View>
+            <View style={styles.hemisphereLeft} />
+            <View style={styles.hemisphereRight} />
           </View>
 
           <Text style={styles.title}>GATEWAY</Text>
-          <Text style={styles.subtitle}>{t.home.subtitle}</Text>
+          <Text style={styles.subtitle}>EXPERIENCE</Text>
+          
+          <View style={styles.classificationBadge}>
+            <Text style={styles.classificationText}>DECLASSIFIED</Text>
+          </View>
 
           <View style={styles.infoBox}>
+            <Text style={styles.infoTitle}>
+              {language === 'de' ? 'CIA Gateway Prozess' : 'CIA Gateway Process'}
+            </Text>
             <Text style={styles.infoText}>
-              {t.profile.aboutText}
+              {language === 'de' 
+                ? 'Basierend auf dem 1983 freigegebenen CIA-Dokument zur Bewusstseinsforschung. Nutze Hemi-Sync Technologie zur Synchronisation deiner Gehirnhälften.'
+                : 'Based on the 1983 declassified CIA document on consciousness research. Use Hemi-Sync technology to synchronize your brain hemispheres.'}
             </Text>
           </View>
 
@@ -125,19 +125,23 @@ export default function WelcomeScreen() {
             activeOpacity={0.8}
           >
             <LinearGradient
-              colors={['#7B68EE', '#9932CC']}
+              colors={[colors.accent.secondary, colors.accent.primary]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.buttonGradient}
             >
-              <Text style={styles.buttonText}>Enter Gateway</Text>
-              <Ionicons name="arrow-forward" size={24} color="#fff" />
+              <Text style={styles.buttonText}>
+                {language === 'de' ? 'Gateway betreten' : 'Enter Gateway'}
+              </Text>
+              <Ionicons name="arrow-forward" size={22} color="#fff" />
             </LinearGradient>
           </TouchableOpacity>
         </View>
 
-        {/* Version */}
-        <Text style={styles.version}>v1.0.0 | Declassified</Text>
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Monroe Institute | 1983</Text>
+          <Text style={styles.versionText}>v1.0.0</Text>
+        </View>
       </LinearGradient>
     </View>
   );
@@ -152,75 +156,116 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  circle: {
+  wave: {
     position: 'absolute',
     borderRadius: 1000,
     borderWidth: 1,
-    borderColor: '#7B68EE',
+    borderColor: colors.accent.primary,
   },
-  circle1: {
-    width: width * 0.6,
-    height: width * 0.6,
+  wave1: {
+    width: width * 0.55,
+    height: width * 0.55,
   },
-  circle2: {
-    width: width * 0.8,
-    height: width * 0.8,
+  wave2: {
+    width: width * 0.75,
+    height: width * 0.75,
   },
-  circle3: {
-    width: width,
-    height: width,
+  wave3: {
+    width: width * 0.95,
+    height: width * 0.95,
   },
   content: {
     alignItems: 'center',
     paddingHorizontal: 32,
     zIndex: 10,
   },
-  iconContainer: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(123, 104, 238, 0.1)',
+  logoContainer: {
+    width: 120,
+    height: 120,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
+    position: 'relative',
+  },
+  logoInner: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.overlay.light,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(123, 104, 238, 0.3)',
+    borderColor: colors.accent.secondary,
+  },
+  hemisphereLeft: {
+    position: 'absolute',
+    left: 0,
+    top: '50%',
+    width: 10,
+    height: 2,
+    backgroundColor: colors.accent.glow,
+  },
+  hemisphereRight: {
+    position: 'absolute',
+    right: 0,
+    top: '50%',
+    width: 10,
+    height: 2,
+    backgroundColor: colors.accent.glow,
   },
   title: {
-    fontSize: 42,
+    fontSize: 44,
     fontWeight: '700',
-    color: '#fff',
-    letterSpacing: 8,
-    marginBottom: 8,
+    color: colors.text.primary,
+    letterSpacing: 12,
   },
   subtitle: {
     fontSize: 16,
-    color: '#8B8B9E',
-    textAlign: 'center',
-    marginBottom: 32,
+    fontWeight: '300',
+    color: colors.accent.glow,
+    letterSpacing: 8,
+    marginTop: 4,
+  },
+  classificationBadge: {
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: colors.status.warning,
+    borderRadius: 4,
+  },
+  classificationText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.status.warning,
+    letterSpacing: 2,
   },
   infoBox: {
-    backgroundColor: 'rgba(123, 104, 238, 0.1)',
+    backgroundColor: colors.overlay.light,
     borderRadius: 16,
     padding: 20,
-    marginBottom: 40,
+    marginTop: 32,
+    marginBottom: 32,
     borderWidth: 1,
-    borderColor: 'rgba(123, 104, 238, 0.2)',
+    borderColor: colors.border.accent,
+    maxWidth: 320,
+  },
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.accent.glow,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   infoText: {
-    fontSize: 14,
-    color: '#a0a0b0',
+    fontSize: 13,
+    color: colors.text.secondary,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
   },
   startButton: {
     borderRadius: 30,
     overflow: 'hidden',
-    elevation: 5,
-    shadowColor: '#7B68EE',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
   },
   buttonGradient: {
     flexDirection: 'row',
@@ -230,14 +275,23 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   buttonText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: '#fff',
   },
-  version: {
+  footer: {
     position: 'absolute',
     bottom: 40,
-    fontSize: 12,
-    color: '#5a5a6e',
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 11,
+    color: colors.text.muted,
+    letterSpacing: 1,
+  },
+  versionText: {
+    fontSize: 10,
+    color: colors.text.muted,
+    marginTop: 4,
   },
 });
