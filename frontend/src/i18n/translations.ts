@@ -6,6 +6,7 @@ export const translations = {
     nav: {
       home: 'Home',
       meditate: 'Meditate',
+      tools: 'Tools',
       journal: 'Journal',
       profile: 'Profile',
     },
@@ -38,6 +39,16 @@ export const translations = {
         title: 'Focus 15',
         subtitle: 'No-Time State',
         description: 'Transcend time and space limitations. Experience the eternal now.',
+      },
+      focus21: {
+        title: 'Focus 21',
+        subtitle: 'The Bridge',
+        description: 'Edge of space-time. Gateway to other energy systems.',
+      },
+      focus23: {
+        title: 'Focus 23',
+        subtitle: 'Out-of-Body State',
+        description: 'Advanced state for OBE exploration.',
       },
       duration: 'Duration',
       minutes: 'min',
@@ -100,6 +111,7 @@ export const translations = {
     nav: {
       home: 'Start',
       meditate: 'Meditieren',
+      tools: 'Werkzeuge',
       journal: 'Tagebuch',
       profile: 'Profil',
     },
@@ -132,6 +144,16 @@ export const translations = {
         title: 'Focus 15',
         subtitle: 'Zeitloser Zustand',
         description: 'Überschreite Zeit- und Raumbegrenzungen. Erlebe das ewige Jetzt.',
+      },
+      focus21: {
+        title: 'Focus 21',
+        subtitle: 'Die Brücke',
+        description: 'Rand der Raumzeit. Tor zu anderen Energiesystemen.',
+      },
+      focus23: {
+        title: 'Focus 23',
+        subtitle: 'Außerkörperlicher Zustand',
+        description: 'Fortgeschrittener Zustand für OBE-Erkundungen.',
       },
       duration: 'Dauer',
       minutes: 'Min',
