@@ -6,7 +6,7 @@ import { useTranslation } from '../../src/hooks/useTranslation';
 import { colors } from '../../src/theme/colors';
 
 export default function TabLayout() {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
 
   return (
     <Tabs
@@ -49,7 +49,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="tools"
         options={{
-          title: language === 'de' ? 'Werkzeuge' : 'Tools',
+          title: t.nav.tools,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="construct-outline" size={size} color={color} />
           ),
