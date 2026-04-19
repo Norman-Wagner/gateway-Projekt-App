@@ -1,12 +1,14 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
-import { WebView } from 'react-native-webview';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
+import { View, StyleSheet, Platform, TouchableOpacity, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../theme/colors';
 
 interface BinauralPlayerProps {
   baseFrequency: number;
   beatFrequency: number;
   isPlaying: boolean;
   volume?: number;
+  onAudioReady?: () => void;
 }
 
 export const BinauralPlayer: React.FC<BinauralPlayerProps> = ({
@@ -14,192 +16,193 @@ export const BinauralPlayer: React.FC<BinauralPlayerProps> = ({
   beatFrequency,
   isPlaying,
   volume = 0.3,
+  onAudioReady,
 }) => {
-  const webViewRef = useRef<WebView>(null);
-  const [isReady, setIsReady] = useState(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const leftOscillatorRef = useRef<OscillatorNode | null>(null);
+  const rightOscillatorRef = useRef<OscillatorNode | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [needsInteraction, setNeedsInteraction] = useState(false);
 
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <style>
-        body { margin: 0; padding: 0; background: transparent; }
-      </style>
-    </head>
-    <body>
-      <script>
-        let audioContext = null;
-        let leftOscillator = null;
-        let rightOscillator = null;
-        let gainNode = null;
-        let isInitialized = false;
+  const initAudio = useCallback(async () => {
+    if (audioContextRef.current) return;
 
-        function initAudio() {
-          if (isInitialized) return;
-          
-          try {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            gainNode = audioContext.createGain();
-            gainNode.gain.value = 0;
-            
-            // Create merger for stereo output
-            const merger = audioContext.createChannelMerger(2);
-            
-            // Left oscillator
-            leftOscillator = audioContext.createOscillator();
-            leftOscillator.type = 'sine';
-            const leftGain = audioContext.createGain();
-            leftOscillator.connect(leftGain);
-            leftGain.connect(merger, 0, 0);
-            
-            // Right oscillator
-            rightOscillator = audioContext.createOscillator();
-            rightOscillator.type = 'sine';
-            const rightGain = audioContext.createGain();
-            rightOscillator.connect(rightGain);
-            rightGain.connect(merger, 0, 1);
-            
-            merger.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            leftOscillator.start();
-            rightOscillator.start();
-            
-            isInitialized = true;
-            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'ready' }));
-          } catch (e) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'error', message: e.message }));
-          }
-        }
+    try {
+      // Create AudioContext
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) {
+        console.error('Web Audio API not supported');
+        return;
+      }
 
-        function setFrequencies(base, beat) {
-          if (!isInitialized) initAudio();
-          if (leftOscillator && rightOscillator) {
-            leftOscillator.frequency.setValueAtTime(base, audioContext.currentTime);
-            rightOscillator.frequency.setValueAtTime(base + beat, audioContext.currentTime);
-          }
-        }
+      const audioContext = new AudioContextClass();
+      audioContextRef.current = audioContext;
 
-        function setVolume(vol) {
-          if (gainNode) {
-            gainNode.gain.setValueAtTime(vol, audioContext.currentTime);
-          }
-        }
+      // Resume if suspended (due to autoplay policy)
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
 
-        function play() {
-          if (!isInitialized) initAudio();
-          if (audioContext && audioContext.state === 'suspended') {
-            audioContext.resume();
-          }
-          setVolume(${volume});
-        }
+      // Create gain node for volume control
+      const gainNode = audioContext.createGain();
+      gainNode.gain.value = 0; // Start silent
+      gainNodeRef.current = gainNode;
 
-        function stop() {
-          setVolume(0);
-        }
+      // Create channel merger for stereo
+      const merger = audioContext.createChannelMerger(2);
+      
+      // Create left oscillator
+      const leftOscillator = audioContext.createOscillator();
+      leftOscillator.type = 'sine';
+      leftOscillator.frequency.value = baseFrequency;
+      const leftGain = audioContext.createGain();
+      leftGain.gain.value = 1;
+      leftOscillator.connect(leftGain);
+      leftGain.connect(merger, 0, 0); // Left channel
+      leftOscillatorRef.current = leftOscillator;
 
-        // Message handler
-        window.addEventListener('message', function(event) {
-          try {
-            const data = JSON.parse(event.data);
-            switch(data.action) {
-              case 'init':
-                initAudio();
-                break;
-              case 'play':
-                play();
-                break;
-              case 'stop':
-                stop();
-                break;
-              case 'setFrequencies':
-                setFrequencies(data.base, data.beat);
-                break;
-              case 'setVolume':
-                setVolume(data.volume);
-                break;
-            }
-          } catch (e) {
-            console.error('Message parse error:', e);
-          }
-        });
+      // Create right oscillator
+      const rightOscillator = audioContext.createOscillator();
+      rightOscillator.type = 'sine';
+      rightOscillator.frequency.value = baseFrequency + beatFrequency;
+      const rightGain = audioContext.createGain();
+      rightGain.gain.value = 1;
+      rightOscillator.connect(rightGain);
+      rightGain.connect(merger, 0, 1); // Right channel
+      rightOscillatorRef.current = rightOscillator;
 
-        // Initialize on load
-        document.addEventListener('DOMContentLoaded', function() {
-          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'loaded' }));
-        });
-      </script>
-    </body>
-    </html>
-  `;
+      // Connect merger to gain to destination
+      merger.connect(gainNode);
+      gainNode.connect(audioContext.destination);
 
-  const sendMessage = useCallback((message: object) => {
-    if (webViewRef.current) {
-      webViewRef.current.postMessage(JSON.stringify(message));
+      // Start oscillators
+      leftOscillator.start();
+      rightOscillator.start();
+
+      setIsInitialized(true);
+      setNeedsInteraction(false);
+      onAudioReady?.();
+      console.log('Binaural audio initialized:', baseFrequency, 'Hz +', beatFrequency, 'Hz beat');
+    } catch (error) {
+      console.error('Failed to initialize audio:', error);
+      setNeedsInteraction(true);
     }
+  }, [baseFrequency, beatFrequency, onAudioReady]);
+
+  // Initialize audio when component mounts
+  useEffect(() => {
+    // Check if we need user interaction first
+    if (Platform.OS === 'web') {
+      // Try to init - if blocked, will show button
+      initAudio().catch(() => setNeedsInteraction(true));
+    }
+
+    return () => {
+      // Cleanup
+      if (leftOscillatorRef.current) {
+        try { leftOscillatorRef.current.stop(); } catch (e) {}
+      }
+      if (rightOscillatorRef.current) {
+        try { rightOscillatorRef.current.stop(); } catch (e) {}
+      }
+      if (audioContextRef.current) {
+        try { audioContextRef.current.close(); } catch (e) {}
+      }
+    };
   }, []);
 
+  // Update frequencies when they change
   useEffect(() => {
-    if (isReady) {
-      sendMessage({ action: 'setFrequencies', base: baseFrequency, beat: beatFrequency });
+    if (leftOscillatorRef.current && rightOscillatorRef.current && audioContextRef.current) {
+      const currentTime = audioContextRef.current.currentTime;
+      leftOscillatorRef.current.frequency.setValueAtTime(baseFrequency, currentTime);
+      rightOscillatorRef.current.frequency.setValueAtTime(baseFrequency + beatFrequency, currentTime);
     }
-  }, [baseFrequency, beatFrequency, isReady, sendMessage]);
+  }, [baseFrequency, beatFrequency]);
 
+  // Handle play/pause
   useEffect(() => {
-    if (isReady) {
-      if (isPlaying) {
-        sendMessage({ action: 'play' });
-      } else {
-        sendMessage({ action: 'stop' });
+    if (!gainNodeRef.current || !audioContextRef.current) return;
+
+    const currentTime = audioContextRef.current.currentTime;
+    
+    if (isPlaying) {
+      // Resume context if needed
+      if (audioContextRef.current.state === 'suspended') {
+        audioContextRef.current.resume();
       }
+      // Fade in
+      gainNodeRef.current.gain.cancelScheduledValues(currentTime);
+      gainNodeRef.current.gain.setValueAtTime(gainNodeRef.current.gain.value, currentTime);
+      gainNodeRef.current.gain.linearRampToValueAtTime(volume, currentTime + 0.5);
+    } else {
+      // Fade out
+      gainNodeRef.current.gain.cancelScheduledValues(currentTime);
+      gainNodeRef.current.gain.setValueAtTime(gainNodeRef.current.gain.value, currentTime);
+      gainNodeRef.current.gain.linearRampToValueAtTime(0, currentTime + 0.3);
     }
-  }, [isPlaying, isReady, sendMessage]);
+  }, [isPlaying, volume]);
 
+  // Update volume
   useEffect(() => {
-    if (isReady) {
-      sendMessage({ action: 'setVolume', volume });
+    if (gainNodeRef.current && audioContextRef.current && isPlaying) {
+      const currentTime = audioContextRef.current.currentTime;
+      gainNodeRef.current.gain.setValueAtTime(volume, currentTime);
     }
-  }, [volume, isReady, sendMessage]);
+  }, [volume, isPlaying]);
 
-  const handleMessage = (event: { nativeEvent: { data: string } }) => {
-    try {
-      const data = JSON.parse(event.nativeEvent.data);
-      if (data.type === 'loaded' || data.type === 'ready') {
-        setIsReady(true);
-        sendMessage({ action: 'init' });
-        sendMessage({ action: 'setFrequencies', base: baseFrequency, beat: beatFrequency });
-      }
-    } catch (e) {
-      console.error('WebView message error:', e);
-    }
-  };
+  // Show activation button if needed
+  if (needsInteraction && !isInitialized) {
+    return (
+      <View style={styles.activationContainer}>
+        <TouchableOpacity 
+          style={styles.activationButton}
+          onPress={initAudio}
+        >
+          <Ionicons name="volume-high" size={24} color="#fff" />
+          <Text style={styles.activationText}>Tap to enable audio</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
-  return (
-    <View style={styles.container}>
-      <WebView
-        ref={webViewRef}
-        source={{ html: htmlContent }}
-        style={styles.webview}
-        onMessage={handleMessage}
-        javaScriptEnabled={true}
-        mediaPlaybackRequiresUserAction={false}
-        allowsInlineMediaPlayback={true}
-      />
-    </View>
-  );
+  // Hidden component when audio is working
+  return <View style={styles.hidden} />;
 };
 
 const styles = StyleSheet.create({
-  container: {
-    width: 1,
-    height: 1,
-    opacity: 0,
-    position: 'absolute',
+  hidden: {
+    width: 0,
+    height: 0,
   },
-  webview: {
-    width: 1,
-    height: 1,
-    backgroundColor: 'transparent',
+  activationContainer: {
+    position: 'absolute',
+    top: 20,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  activationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.accent.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    gap: 8,
+  },
+  activationText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
+
+// Add type declarations for older browsers
+declare global {
+  interface Window {
+    webkitAudioContext: typeof AudioContext;
+  }
+}
